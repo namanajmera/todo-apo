@@ -1,5 +1,6 @@
-const express = require("express");
-const cors = require("cors");
+import express from "express";
+import cors from "cors";
+
 const app = express();
 
 app.use(cors());
@@ -9,4 +10,4 @@ app.get("/", (req, res) => {
     res.send("API is running...");
 });
 
-module.exports = app;
+export default app;
