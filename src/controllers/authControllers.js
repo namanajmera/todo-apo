@@ -17,6 +17,7 @@ export const createAndSendToken = (user, statusCode, res) => {
         status: "success",
         data: {
             token,
+            user,
         },
     });
 };
@@ -40,4 +41,23 @@ export const signUp = createAsync(async (req, res, next) => {
     });
 
     createAndSendToken(newUser, 201, res);
+});
+
+export const login = createAsync(async (req, res, next) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return next(new AppError("Email and password are required", 400));
+    }
+
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) {
+        return next(new AppError("Invalid email.", 401));
+    }
+    if (!(await user.comparePassword(password, user.password))) {
+        return next(new AppError("Invalid Password.", 401));
+    }
+
+    createAndSendToken(user, 200, res);
+
 });
