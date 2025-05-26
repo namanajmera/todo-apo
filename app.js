@@ -14,12 +14,12 @@ app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
-app.all("*", (req, res, next) => {
+/* app.all("*", (req, res, next) => {
   const error = new Error(`Can't find ${req.originalUrl} on this server!`);
   error.statusCode = 404;
   error.status = "fail";
   next(error);
-})
+}) */
 
 app.use(globalErrorHandler);
 
