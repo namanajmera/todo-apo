@@ -11,6 +11,12 @@ const signToken = (id) => {
 }
 export const createAndSendToken = (user, statusCode, res) => {
     const token = signToken(user._id);
+    const cookieOPtions = {
+        expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+    }
+    res.cookie('token', token, cookieOPtions);
     user.password = undefined;
 
     res.status(statusCode).json({

@@ -4,9 +4,11 @@ import cors from "cors";
 const app = express();
 import authRoutes from "./src/routes/authRoutes.js";
 import { globalErrorHandler } from "./src/middlewares/errorHandlers.js";
+import cookieParser from "cookie-parser";
 
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api/v1/auth", authRoutes)
 
