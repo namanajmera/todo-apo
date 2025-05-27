@@ -3,13 +3,14 @@ import { config } from "../config/config.js";
 import { User } from "../models/users.js";
 import { AppError } from "../utils/AppError.js";
 import { createAsync } from "../utils/createAsync.js";
+import crypto from 'crypto';
 
 const signToken = (id) => {
     return jwt.sign({ id }, config.jwtSecret, {
         expiresIn: config.expiresIn,
     })
 }
-export const createAndSendToken = (user, statusCode, res) => {
+const createAndSendToken = (user, statusCode, res) => {
     const token = signToken(user._id);
     const cookieOPtions = {
         expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -67,3 +68,57 @@ export const login = createAsync(async (req, res, next) => {
     createAndSendToken(user, 200, res);
 
 });
+
+export const forgotPassword = createAsync(async (req, res, next) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return next(new AppError("Email is required", 400));
+    }
+    const user = await User.findOne({ email });
+    if (!user) {
+        return next(new AppError("User with this email does not exist", 404));
+    }
+
+    const resetToken = user.createResetPasswordToken();
+    await user.save({ validateBeforeSave: false });
+
+    const resetURL = `${req.protocol}://${req.get("host")}/api/v1/auth/reset-password/${resetToken}`;
+
+    res.status(200).json({
+        status: "success",
+        message: "Reset token created successfully",
+        resetURL,
+    });
+
+})
+
+export const resetPassword = createAsync(async (req, res, next) => {
+    const { token } = req.params;
+    const { password, confirmPassword } = req.body;
+
+    if (!token || !password || !confirmPassword) {
+        return next(new AppError("Token, password, and confirm password are required", 400));
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await User.findOne({
+        passwordResetToken: hashedToken,
+        passwordResetExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+        return next(new AppError("Invalid or expired token", 400));
+    }
+
+    if (password !== confirmPassword) {
+        return next(new AppError("Passwords do not match", 400));
+    }
+
+    user.password = password;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+
+    createAndSendToken(user, 200, res);
+})
