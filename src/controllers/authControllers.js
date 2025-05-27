@@ -173,3 +173,20 @@ export const changePassword = createAsync(async (req, res, next) => {
     await user.save();
     createAndSendToken(user, 200, res);
 })
+
+export const protect = createAsync(async (req, res, next) => {
+    const token = req.cookies.token;
+
+    if (!token) {
+        return next(new AppError("You are not logged in", 401));
+    }
+
+    const user = await getUserByToken(token);
+
+    if (!user) {
+        return next(new AppError("User not found", 404));
+    }
+
+    req.user = user;
+    next();
+})
