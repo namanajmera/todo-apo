@@ -33,6 +33,10 @@ const userSchema = mongoose.Schema({
         type: Date,
         select: false,
     },
+    profession: {
+        type: String,
+        required: false,
+    }
 }, {
     timestamps: true,
 });

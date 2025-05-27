@@ -182,6 +182,7 @@ export const protect = createAsync(async (req, res, next) => {
     }
 
     const user = await getUserByToken(token);
+    user.password = undefined;
 
     if (!user) {
         return next(new AppError("User not found", 404));
