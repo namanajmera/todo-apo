@@ -10,6 +10,13 @@ const signToken = (id) => {
         expiresIn: config.expiresIn,
     })
 }
+
+const getUserByToken = async (token) => {
+    const decoded = jwt.verify(token, config.jwtSecret);
+    const user = await User.findById(decoded.id).select("+password");
+    return user;
+}
+
 const createAndSendToken = (user, statusCode, res) => {
     const token = signToken(user._id);
     const cookieOPtions = {
@@ -135,3 +142,34 @@ export const logout = (req, res, next) => {
         message: "Logged out successfully",
     });
 };
+
+export const changePassword = createAsync(async (req, res, next) => {
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+        return next(new AppError("Current password, new password, and confirm new password are required", 400));
+    }
+
+    const token = req.cookies.token;
+
+    if (!token) {
+        return next(new AppError("You are not logged in", 401));
+    }
+    const user = await getUserByToken(token);
+
+    if (!user) {
+        return next(new AppError("User not found", 404));
+    }
+
+    if (!(await user.comparePassword(currentPassword, user.password))) {
+        return next(new AppError("Invalid Password.", 401));
+    }
+
+    if (newPassword !== confirmNewPassword) {
+        return next(new AppError("New passwords do not match", 400));
+    }
+
+    user.password = newPassword;
+    await user.save();
+    createAndSendToken(user, 200, res);
+})
